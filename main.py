@@ -8,7 +8,10 @@ def start():
     init_db()
 
     def on_login(user):
-        if user['role'] == 'instructor':
+        if user['role'] == 'admin':
+            from ui.admin_ui import AdminDashboard
+            AdminDashboard(user, start)
+        elif user['role'] == 'instructor':
             from ui.instructor_ui import InstructorDashboard
             InstructorDashboard(user, start)
         else:
