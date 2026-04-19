@@ -1,0 +1,149 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from auth import login_user, register_user
+
+BG = "#0f0f1a"
+CARD = "#1a1a2e"
+ACCENT = "#7c5cbf"
+ACCENT2 = "#a67cff"
+TEXT = "#e8e8f0"
+MUTED = "#888899"
+SUCCESS = "#4caf82"
+DANGER = "#e05c6e"
+FONT = ("Courier New", 10)
+TITLE_FONT = ("Courier New", 22, "bold")
+LABEL_FONT = ("Courier New", 9)
+
+def styled_entry(parent, show=None):
+    e = tk.Entry(parent, bg="#252540", fg=TEXT, insertbackground=ACCENT2,
+                 relief="flat", font=FONT, bd=0)
+    if show:
+        e.config(show=show)
+    return e
+
+def styled_btn(parent, text, command, color=ACCENT, fg="white"):
+    return tk.Button(parent, text=text, command=command,
+                     bg=color, fg=fg, font=("Courier New", 10, "bold"),
+                     relief="flat", cursor="hand2", bd=0,
+                     activebackground=ACCENT2, activeforeground="white",
+                     padx=20, pady=8)
+
+class AuthWindow:
+    def __init__(self, on_login_success):
+        self.on_login_success = on_login_success
+        self.root = tk.Tk()
+        self.root.title("LearnPy LMS — Login")
+        self.root.geometry("480x560")
+        self.root.configure(bg=BG)
+        self.root.resizable(False, False)
+        self._center(self.root)
+        self._build_login()
+        self.root.mainloop()
+
+    def _center(self, win):
+        win.update_idletasks()
+        w, h = win.winfo_width(), win.winfo_height()
+        x = (win.winfo_screenwidth() - w) // 2
+        y = (win.winfo_screenheight() - h) // 2
+        win.geometry(f"+{x}+{y}")
+
+    def _clear(self):
+        for w in self.root.winfo_children():
+            w.destroy()
+
+    def _build_login(self):
+        self._clear()
+        outer = tk.Frame(self.root, bg=BG)
+        outer.pack(expand=True, fill="both", padx=40, pady=30)
+
+        tk.Label(outer, text="LearnPy", font=TITLE_FONT, bg=BG, fg=ACCENT2).pack(pady=(10, 2))
+        tk.Label(outer, text="Learning Management System", font=LABEL_FONT, bg=BG, fg=MUTED).pack(pady=(0, 30))
+
+        card = tk.Frame(outer, bg=CARD, bd=0)
+        card.pack(fill="x", pady=5, ipady=20, ipadx=20)
+
+        tk.Label(card, text="USERNAME", font=LABEL_FONT, bg=CARD, fg=MUTED).pack(anchor="w", padx=25, pady=(20, 3))
+        self.login_user_entry = styled_entry(card)
+        self.login_user_entry.pack(fill="x", padx=25, ipady=7)
+
+        tk.Label(card, text="PASSWORD", font=LABEL_FONT, bg=CARD, fg=MUTED).pack(anchor="w", padx=25, pady=(15, 3))
+        self.login_pass_entry = styled_entry(card, show="•")
+        self.login_pass_entry.pack(fill="x", padx=25, ipady=7)
+
+        self.login_msg = tk.Label(card, text="", font=LABEL_FONT, bg=CARD, fg=DANGER)
+        self.login_msg.pack(pady=(8, 0))
+
+        styled_btn(card, "  LOGIN  ", self._do_login).pack(pady=(10, 20))
+
+        tk.Label(outer, text="Don't have an account?", font=LABEL_FONT, bg=BG, fg=MUTED).pack(pady=(15, 3))
+        tk.Button(outer, text="Register here", font=LABEL_FONT, bg=BG, fg=ACCENT2,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self._build_register).pack()
+
+    def _do_login(self):
+        username = self.login_user_entry.get().strip()
+        password = self.login_pass_entry.get().strip()
+        if not username or not password:
+            self.login_msg.config(text="Please fill all fields.")
+            return
+        ok, result = login_user(username, password)
+        if ok:
+            self.root.destroy()
+            self.on_login_success(result)
+        else:
+            self.login_msg.config(text=result)
+
+    def _build_register(self):
+        self._clear()
+        outer = tk.Frame(self.root, bg=BG)
+        outer.pack(expand=True, fill="both", padx=40, pady=20)
+
+        tk.Label(outer, text="LearnPy", font=TITLE_FONT, bg=BG, fg=ACCENT2).pack(pady=(5, 2))
+        tk.Label(outer, text="Create an Account", font=LABEL_FONT, bg=BG, fg=MUTED).pack(pady=(0, 15))
+
+        card = tk.Frame(outer, bg=CARD)
+        card.pack(fill="x", ipady=10, ipadx=20)
+
+        fields = [("FULL NAME", False), ("USERNAME", False), ("PASSWORD", True)]
+        self.reg_entries = {}
+        for label, hide in fields:
+            tk.Label(card, text=label, font=LABEL_FONT, bg=CARD, fg=MUTED).pack(anchor="w", padx=25, pady=(12, 3))
+            e = styled_entry(card, show="•" if hide else None)
+            e.pack(fill="x", padx=25, ipady=6)
+            self.reg_entries[label] = e
+
+        tk.Label(card, text="ROLE", font=LABEL_FONT, bg=CARD, fg=MUTED).pack(anchor="w", padx=25, pady=(12, 3))
+        self.role_var = tk.StringVar(value="student")
+        role_frame = tk.Frame(card, bg=CARD)
+        role_frame.pack(anchor="w", padx=25)
+        for val, lbl in [("student", "Student"), ("instructor", "Instructor")]:
+            tk.Radiobutton(role_frame, text=lbl, variable=self.role_var, value=val,
+                           bg=CARD, fg=TEXT, selectcolor=ACCENT, font=LABEL_FONT,
+                           activebackground=CARD).pack(side="left", padx=(0, 15))
+
+        self.reg_msg = tk.Label(card, text="", font=LABEL_FONT, bg=CARD, fg=DANGER)
+        self.reg_msg.pack(pady=(8, 0))
+
+        styled_btn(card, "  REGISTER  ", self._do_register, color=SUCCESS).pack(pady=(10, 15))
+
+        tk.Button(outer, text="← Back to Login", font=LABEL_FONT, bg=BG, fg=ACCENT2,
+                  relief="flat", cursor="hand2", bd=0,
+                  command=self._build_login).pack(pady=10)
+
+    def _do_register(self):
+        full_name = self.reg_entries["FULL NAME"].get().strip()
+        username = self.reg_entries["USERNAME"].get().strip()
+        password = self.reg_entries["PASSWORD"].get().strip()
+        role = self.role_var.get()
+        if not full_name or not username or not password:
+            self.reg_msg.config(text="Please fill all fields.")
+            return
+        if len(password) < 4:
+            self.reg_msg.config(text="Password must be at least 4 characters.")
+            return
+        ok, msg = register_user(username, password, role, full_name)
+        if ok:
+            self.reg_msg.config(text="✓ Registered! Redirecting...", fg=SUCCESS)
+            self.root.after(1000, self._build_login)
+        else:
+            self.reg_msg.config(text=msg, fg=DANGER)
